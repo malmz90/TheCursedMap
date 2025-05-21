@@ -25,14 +25,23 @@ class RegisterViewModel: ObservableObject {
         }
         
         Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
-            guard let self = self, let userID = result?.user.uid, error == nil else {
+            guard let self = self, let user = result?.user, error == nil else {
                 DispatchQueue.main.async {
                     self?.errorMessage = error?.localizedDescription ?? "Registration Failed"
                     completion(false)
                 }
                 return
             }
-            self.createUser(id: userID) {
+
+            let changeRequest = user.createProfileChangeRequest()
+            changeRequest.displayName = self.name
+            changeRequest.commitChanges { error in
+                if let error = error {
+                    print("Failed to set displayName: \(error.localizedDescription)")
+                }
+            }
+
+            self.createUser(id: user.uid) {
                 completion(true)
             }
         }
